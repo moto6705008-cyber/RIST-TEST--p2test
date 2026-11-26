@@ -21478,6 +21478,18 @@ try{ if(typeof P2PH_PINLAB==='object'){ P2PH_PINLAB.work='💼 ที่ทำ�
  function ageD(e){ return Math.floor((Date.now()-(e.created||Date.now()))/DAY); }
  function summ(e){ return {id:e.id,br:e.br,brn:e.brn,name:e.mask,occ:e.occ,created:e.created,updated:e.updated,n:need(e).length,d:doneN(e),qr:!!(e.S&&e.S.tok)}; }
  function push(e,gone){ try{ if(typeof cloudPushMaster!=='function'||!cloudReady()) return; cloudPushMaster(pfx()+e.id, gone?{id:e.id,gone:1,at:Date.now(),br:e.br}:summ(e)); }catch(err){} }
+ /* ---- ตรวจ "ค้างกรอก" รายหัวข้อ (เงียบ ไม่เด้งข้อความ ไม่ย้ายเคอร์เซอร์ ไม่ทิ้งกรอบแดง) ---- */
+ const SEC_NM=['ข้อมูลลูกค้า','อาชีพและการทำงาน','รายได้และภาระหนี้','ประเภทการขายและเงื่อนไข','ผู้ค้ำประกันและประวัติ'];
+ function silentStep(n){ const box=document.getElementById('fstep-'+n); if(!box||typeof fstepValidate!=='function') return [];
+  const els=[].slice.call(box.querySelectorAll('input,select,textarea')); const snap=els.map(e=>[e,e.style.borderColor,e.style.background]);
+  const A=window.alert, F=HTMLElement.prototype.focus; let msg=''; window.alert=function(t){ msg=String(t||''); }; HTMLElement.prototype.focus=function(){};
+  const wasH=box.classList.contains('hidden'); if(wasH) box.classList.remove('hidden');
+  try{ fstepValidate(n); }catch(e){} finally{ if(wasH) box.classList.add('hidden'); window.alert=A; HTMLElement.prototype.focus=F; snap.forEach(x=>{ x[0].style.borderColor=x[1]; x[0].style.background=x[2]; }); }
+  return msg?msg.split('\n').filter(l=>/^\u2022 /.test(l)).map(l=>l.slice(2).trim()):[]; }
+ function calcMiss(){ try{ if(!document.getElementById('fstep-1')) return null; const out=[]; let dm=[]; try{ if(typeof p2DocMissing==='function'&&p2DocOn()) dm=p2DocMissing()||[]; }catch(e){}
+  [1,2,3,4,5].forEach(n=>{ try{ if(typeof stepLocked==='function'&&stepLocked(n)) return; }catch(e){}
+   let m=silentStep(n); if(n===3) m=m.concat(dm.filter(x=>/^ผู้ซื้อ/.test(x))); if(n===5) m=m.concat(dm.filter(x=>/^ผู้ค้ำ/.test(x)));
+   if(m.length) out.push({n:n,t:SEC_NM[n-1],m:m.slice(0,12)}); }); return out; }catch(e){ return null; } }
  /* ---- บันทึกร่าง ---- */
  function saveCur(silent){ const d=nowForm(); if(!d){ if(!silent) alert('ยังไม่ได้กรอกข้อมูลลูกค้า — กรอกชื่อ/เลขบัตร/รายได้อย่างน้อยหนึ่งช่องก่อนบันทึกร่าง'); return null; }
   const L=load(); const first=!window.__drActive; const id=window.__drActive||window.__p2draft||('D'+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
@@ -21486,7 +21498,7 @@ try{ if(typeof P2PH_PINLAB==='object'){ P2PH_PINLAB.work='💼 ที่ทำ�
   if(first&&bk){ try{ localStorage.removeItem(bk); }catch(e){} idbPut('draftimg:'+bk,null); }
   let e=L.find(x=>x.id===id); if(!e){ e={id:id,created:Date.now()}; L.unshift(e); }
   let S=null; try{ S=window.preshotGet&&window.preshotGet(); }catch(err){}
-  Object.assign(e,{updated:Date.now(),name:fullName(d),mask:maskName(d),occ:occName(d),br:br(),brn:brName(),step:d.step||1,S:S?JSON.parse(JSON.stringify(S)):null});
+  Object.assign(e,{updated:Date.now(),name:fullName(d),mask:maskName(d),occ:occName(d),br:br(),brn:brName(),step:d.step||1,S:S?JSON.parse(JSON.stringify(S)):null}); { const mm=calcMiss(); if(mm) e.miss=mm; }
   put(L); idbPut(SNK(id),snapG()); push(e); return e; }
  /* ฟอร์มที่กรอกค้างอยู่ (ยังไม่ใช่ร่าง) แต่ผู้ใช้ไม่ได้อยู่หน้าฟอร์ม → แปลงจากที่ autosave ไว้ (คีย์ฐาน) เป็นร่าง */
  function adoptBase(){ if(window.__drActive) return null; const bk=baseKey(); let d=null; try{ d=JSON.parse(localStorage.getItem(bk)||'null'); }catch(e){} if(!fdHasContent(d)) return null;
@@ -21523,12 +21535,14 @@ try{ if(typeof P2PH_PINLAB==='object'){ P2PH_PINLAB.work='💼 ที่ทำ�
    +'<span style="margin-left:auto"></span><button class="btn btn-line btn-sm" onclick="drSync()">🔄 ตรวจภาพล่าสุด</button> <button class="btn btn-org btn-sm" onclick="drNew()">➕ เริ่มใบคำขอใหม่</button></div>'
    +'<div class="mut" style="font-size:12.5px;margin:6px 0 10px;line-height:1.6">กรอกใบคำขอรอไว้ได้หลายเคส · แต่ละเคสมี QR ถ่ายภาพของตัวเอง · ถ่ายภาพบังคับครบแล้วจึงเปิดเคสนั้นกด "ส่งคำขอไปยัง สนญ." · สนญ. เห็นเฉพาะจำนวนร่างและสถานะภาพ (ไม่ใช่รายละเอียด) · ร่างค้างเกิน '+STALE_D+' วัน สนญ. จะเห็นเป็นสีเหลือง<br>ร่างเก็บในเครื่อง/เบราว์เซอร์นี้ — ถ้าเปิดจากอีกเครื่อง จะไม่เห็นร่างของเครื่องนี้</div>';
   if(!L.length) return h+'<div class="mut" style="padding:18px 0;text-align:center">ยังไม่มีร่าง — กรอกใบคำขอ แล้วกด "📝 บันทึกร่าง" ที่แถบบนของฟอร์ม</div></div>';
-  h+='<div style="overflow:auto"><table class="tbl" style="width:100%;font-size:13.5px"><thead><tr><th>ลูกค้า</th><th>อาชีพ</th><th>สร้างเมื่อ</th><th>ค้าง</th><th>ภาพบังคับ</th><th></th></tr></thead><tbody>';
+  h+='<div style="overflow:auto"><table class="tbl" style="width:100%;font-size:13.5px"><thead><tr><th>ลูกค้า</th><th>อาชีพ</th><th>สร้างเมื่อ</th><th>ค้าง</th><th>ค้างกรอก</th><th>ภาพบังคับ</th><th></th></tr></thead><tbody>';
   L.forEach(e=>{ const n=need(e).length, d=doneN(e), ag=ageD(e), st=ag>STALE_D, full=n>0&&d===n;
    const ph=!e.S||!e.S.tok?'<span class="mut">ยังไม่สร้าง QR</span>':'<span class="tag" style="background:'+(full?'#f0fdf4':'#fff7ed')+';border:1px solid '+(full?'#86efac':'#fdba74')+';color:'+(full?'#15803d':'#c2410c')+'">'+(full?'✓ ครบ ':'')+d+' / '+n+'</span>';
-   h+='<tr style="'+(st?'background:#fefce8':'')+(window.__drActive===e.id?';outline:2px solid #38bdf8':'')+'"><td><b>'+E(e.name||'(ไม่มีชื่อ)')+'</b>'+(window.__drActive===e.id?' <span class="tag" style="background:#e0f2fe;color:#075985">กำลังเปิดอยู่</span>':'')+'</td><td>'+E(e.occ||'—')+'</td><td>'+E(p2phT(e.created))+'</td><td>'+(ag>0?ag+' วัน':'วันนี้')+(st?' ⚠':'')+'</td><td>'+ph+'</td>'
+   h+='<tr style="'+(st?'background:#fefce8':'')+(window.__drActive===e.id?';outline:2px solid #38bdf8':'')+'"><td><b>'+E(e.name||'(ไม่มีชื่อ)')+'</b>'+(window.__drActive===e.id?' <span class="tag" style="background:#e0f2fe;color:#075985">กำลังเปิดอยู่</span>':'')+'</td><td>'+E(e.occ||'—')+'</td><td>'+E(p2phT(e.created))+'</td><td>'+(ag>0?ag+' วัน':'วันนี้')+(st?' ⚠':'')+'</td><td>'+missCell(e)+'</td><td>'+ph+'</td>'
     +'<td style="white-space:nowrap"><button class="btn btn-sm btn-org" onclick="drOpen(\''+e.id+'\')">เปิดต่อ</button> <button class="btn btn-sm btn-line" onclick="drCopy(\''+e.id+'\',this)">💬 ลิงก์ LINE</button> <button class="btn btn-sm btn-line" style="color:#b91c1c" onclick="drDel(\''+e.id+'\')">🗑</button></td></tr>'; });
   return h+'</tbody></table></div></div>'; }
+ function missCell(e){ if(!e.miss) return '<span class="mut" style="font-size:12px">เปิดร่างเพื่อตรวจ</span>'; if(!e.miss.length) return '<span class="tag" style="background:#f0fdf4;border:1px solid #86efac;color:#15803d">✅ กรอกครบ</span>';
+  return e.miss.map(x=>'<div title="'+E(x.m.join('\n'))+'" style="margin:3px 0;font-size:12.5px"><span class="tag" style="background:#fff7ed;border:1px solid #fdba74;color:#c2410c">ข้อ '+x.n+' '+E(x.t)+' · ค้าง '+x.m.length+'</span><div class="mut" style="font-size:11.5px;line-height:1.4;margin-top:1px">'+E(x.m.slice(0,3).map(t=>String(t).replace(/\s*\(.*$/,'').slice(0,46)).join(' · '))+(x.m.length>3?' · +'+(x.m.length-3)+' อื่น ๆ':'')+'</div></div>').join(''); }
  function render(){ if(currentTab!=='pdr') return; const v=$('view'); if(v) v.innerHTML=listHTML(); }
  /* ---- สนญ.: อ่านสรุปร่างจาก master ---- */
  window.__drHQ=window.__drHQ||{};
@@ -21657,7 +21671,14 @@ try{ if(typeof P2PH_PINLAB==='object'){ P2PH_PINLAB.work='💼 ที่ทำ�
   const npEl=$('p2np'); const last=secs[secs.length-1]; if(npEl&&last&&last.nextElementSibling!==npEl){ npEl.style.marginTop='8px'; last.insertAdjacentElement('afterend',npEl); }
   box.dataset.alt=JSON.stringify([st.inc,!!window.__p2np,anyNeed(st)]); }
  if(typeof p2DocSet==='function'){ const _s=p2DocSet; p2DocSet=function(k){ if(k==='inc') window.__altAuto=false; return _s.apply(this,arguments); }; }
- { const _d=p2DocRender; p2DocRender=function(){ const r=_d.apply(this,arguments); try{ const b=document.querySelector('#p2doc-w .p2doc'); if(b) delete b.dataset.alt; polish(); }catch(e){ console.warn('altdoc',e); } return r; }; }
+ { const _d=p2DocRender; p2DocRender=function(){ const r=_d.apply(this,arguments); try{ const b=document.querySelector('#p2doc-w .p2doc'); if(b) delete b.dataset.alt; polish(); noGuide(); }catch(e){ console.warn('altdoc',e); } return r; }; }
+
+ /* จัดแถวเอกสาร: ช่องติ๊ก+ชื่อเอกสาร เป็นคอลัมน์ซ้าย · ปุ่มแนบเป็นคอลัมน์ขวา เรียงตรงกันทุกแถว (ผู้ใช้ 26 พ.ย. 69 "ปรับให้ตรงสวยงาม") */
+ try{ const st=document.createElement('style'); st.textContent='.p2doc .p2d-row{display:grid;grid-template-columns:minmax(190px,40%) minmax(0,1fr);gap:6px 14px;align-items:center;padding:5px 0;border-top:1px dashed #fde7c3}'
+  +'.p2doc .p2d-row:first-of-type{border-top:0}.p2doc .p2d-row>label:first-child{margin:0;line-height:1.35}'
+  +'.p2doc .p2d-row .p2up,.p2doc .p2d-row label.p2d-file{margin:0!important;flex-basis:auto!important;justify-self:start;max-width:100%}'
+  +'.p2doc .p2d-row .p2up .btn{white-space:nowrap}'
+  +'@media(max-width:700px){.p2doc .p2d-row{grid-template-columns:1fr}}'; document.head.appendChild(st); }catch(e){}
  /* ปุ่ม 📘 แนวทางเก็บภาพ/เอกสาร — ไม่ขึ้นหน้าสาขา */
  function noGuide(){ try{ if(SESSION&&SESSION.role==='branch') document.querySelectorAll('.phd-guide').forEach(x=>x.remove()); }catch(e){} }
  setInterval(()=>{ noGuide(); autoBill(); },600);
