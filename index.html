@@ -15275,7 +15275,7 @@ function retTopicNote(s){ s=String(s||''); for(const [k,re] of RET_KW) if(re.tes
 let fDup='';
 const _dE=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function dupDays(){ const d=+((CFG||{}).dupDays); return d>0?d:30; }
-function p2FromYmd(){ return String((CFG||{}).p2From||'2026-12-01'); }
+function p2FromYmd(){ return String((CFG||{}).p2From||'2026-11-01'); }
 function _dupToday(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function dupMode(){ const m=(CFG||{}).dupMode; if(m==='warn'||m==='block') return m; return _dupToday()>=p2FromYmd()?'block':'warn'; }
 function _dupPhones(x){ return [normDigits(x.phone||''),...((x.phones||[]).map(p=>normDigits((p&&p.no)||'')))].filter(p=>p&&p.length>=9); }
