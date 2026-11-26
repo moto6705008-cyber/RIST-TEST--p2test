@@ -21530,26 +21530,69 @@ try{ if(typeof P2PH_PINLAB==='object'){ P2PH_PINLAB.work='💼 ที่ทำ�
    L.forEach(e=>{ const o=cs['~'+e.id]; if(!o||!e.S) return; if(JSON.stringify(o.done||{})!==JSON.stringify(e.S.done||{})){ e.S.done=o.done||{}; ch=true; } if(o.items&&o.items.length) e.S.items=o.items; if(o.exp) e.S.exp=o.exp; if(o.tok) e.S.tok=o.tok; });
    if(ch){ put(L); L.forEach(e=>push(e)); } render(); }).catch(()=>{ render(); }); };
  /* ---- หน้ารายการร่างของสาขา ---- */
- function listHTML(){ const L=load().sort((a,b)=>(b.updated||0)-(a.updated||0));
-  let h='<div class="card" style="padding:14px 16px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><h2 style="margin:0;font-size:18px">📝 ร่างคำขอ (รอถ่ายภาพ)</h2><span class="mut" style="font-size:13px">'+L.length+' ร่าง</span>'
-   +'<span style="margin-left:auto"></span><button class="btn btn-line btn-sm" onclick="drSync()">🔄 ตรวจภาพล่าสุด</button> <button class="btn btn-org btn-sm" onclick="drNew()">➕ เริ่มใบคำขอใหม่</button></div>'
-   +'<div class="mut" style="font-size:12.5px;margin:6px 0 10px;line-height:1.6">กรอกใบคำขอรอไว้ได้หลายเคส · แต่ละเคสมี QR ถ่ายภาพของตัวเอง · ถ่ายภาพบังคับครบแล้วจึงเปิดเคสนั้นกด "ส่งคำขอไปยัง สนญ." · สนญ. เห็นเฉพาะจำนวนร่างและสถานะภาพ (ไม่ใช่รายละเอียด) · ร่างค้างเกิน '+STALE_D+' วัน สนญ. จะเห็นเป็นสีเหลือง<br>ร่างเก็บในเครื่อง/เบราว์เซอร์นี้ — ถ้าเปิดจากอีกเครื่อง จะไม่เห็นร่างของเครื่องนี้</div>';
-  if(!L.length) return h+'<div class="mut" style="padding:18px 0;text-align:center">ยังไม่มีร่าง — กรอกใบคำขอ แล้วกด "📝 บันทึกร่าง" ที่แถบบนของฟอร์ม</div></div>';
-  h+='<style>.drac td{vertical-align:middle}.drac .pg{display:flex;align-items:center;gap:8px;margin-bottom:6px}.drac .pb{flex:1;max-width:220px;height:7px;background:#f3f4f6;border-radius:99px;overflow:hidden}.drac .pb i{display:block;height:100%;background:#f26522;border-radius:99px}.drac .pt{font-size:12.5px;color:#6b7280;white-space:nowrap}.drac .cp{display:flex;flex-wrap:wrap;gap:6px}.drac .ch{border-radius:999px;font-size:12.5px;padding:2px 10px;border:1px solid #fdba74;background:#fff1e8;color:#c2410c;cursor:default}.drac .ch.g{border-color:#e5e7eb;background:#f3f4f6;color:#4b5563}.drac .ch.ok{border-color:#86efac;background:#f0fdf4;color:#15803d}.drac .dd{display:inline-flex;align-items:center;gap:4px;font-weight:600;font-size:13px;padding:3px 10px;border-radius:999px;white-space:nowrap}.drac .d0{background:#ecfdf5;color:#16a34a}.drac .d1{background:#fffbeb;color:#d97706}.drac .d2{background:#fef2f2;color:#dc2626}</style>';
-  h+='<div style="overflow:auto"><table class="tbl drac" style="width:100%;font-size:13.5px"><thead><tr><th style="width:18%">ลูกค้า</th><th style="width:12%">สร้างเมื่อ</th><th>งานที่ค้าง</th><th style="width:12%">ค้างมาแล้ว</th><th></th></tr></thead><tbody>';
-  L.slice().sort((a,b)=>(a.created||0)-(b.created||0)).forEach(e=>{ const ag=ageD(e), st=ag>STALE_D, act=window.__drActive===e.id;
-   const dc=st?'d2':ag>0?'d1':'d0', dl=(st?'⏰ ':'')+(ag>0?'ค้าง '+ag+' วัน':'วันนี้');
-   h+='<tr style="'+(st?'background:#fefce8;box-shadow:inset 4px 0 0 #dc2626':ag>0?'box-shadow:inset 4px 0 0 #d97706':'')+(act?';outline:2px solid #38bdf8':'')+'"><td><b>'+E(e.name||'(ไม่มีชื่อ)')+'</b>'+(act?' <span class="tag" style="background:#e0f2fe;color:#075985">กำลังเปิดอยู่</span>':'')+'</td><td class="mut">'+E(p2phT(e.created))+'</td><td>'+todoCell(e)+'</td><td><span class="dd '+dc+'">'+dl+'</span></td>'
-    +'<td style="white-space:nowrap;text-align:right"><button class="btn btn-sm btn-org" onclick="drOpen(\''+e.id+'\')">เปิดต่อ</button> <button class="btn btn-sm btn-line" onclick="drCopy(\''+e.id+'\',this)">💬 LINE</button> <button class="btn btn-sm btn-line" style="color:#b91c1c" title="ลบร่าง" onclick="drDel(\''+e.id+'\')">🗑</button></td></tr>'; });
-  return h+'</tbody></table></div></div>'; }
- /* แบบ A+C: แถบความคืบหน้า (หัวข้อฟอร์ม 5 ข้อ + ภาพบังคับ) + ป้ายงานที่ค้าง */
- function todoCell(e){ if(!e.miss) return '<span class="mut" style="font-size:12.5px">ยังไม่ได้ตรวจ · กด "เปิดต่อ" แล้วกลับมาหน้านี้ จะขึ้นรายการที่ค้าง</span>';
-  const n=need(e).length, d=doneN(e), qr=!!(e.S&&e.S.tok), fs=5-e.miss.length;
-  const tot=5+(qr&&n?n:1), dn=fs+(qr&&n?d:0), pc=Math.round(dn*100/tot);
-  let c=e.miss.map(x=>'<span class="ch" title="'+E(x.m.join('\n'))+'">ข้อ '+x.n+' '+E(x.t)+' · ค้าง '+x.m.length+'</span>').join('');
-  if(!qr) c+='<span class="ch g">ภาพบังคับ · ยังไม่สร้าง QR</span>'; else if(n&&d<n) c+='<span class="ch g">ภาพบังคับ · ค้าง '+(n-d)+' ภาพ</span>'; else if(n) c+='<span class="ch ok">✓ ภาพครบ</span>';
-  if(dn>=tot) c='<span class="ch ok">✅ กรอกครบและภาพครบ · เปิดต่อเพื่อส่ง สนญ.</span>';
-  return '<div class="pg"><div class="pb"><i style="width:'+pc+'%"></i></div><span class="pt">เสร็จ '+dn+'/'+tot+'</span></div><div class="cp">'+c+'</div>'; }
+ /* ---- หน้ารายการร่างของสาขา · แบบ 2 ไทม์ไลน์แบ่งช่อง (1128 ร่าง-ไทม์ไลน์) ---- */
+ const DRT_CSS='<style>'
+  +'.drt{padding:0!important;overflow:hidden;border:1.5px solid #e2e8f0;border-radius:18px;box-shadow:0 6px 24px rgba(30,39,97,.06)}'
+  +'.drt .sh{padding:18px 22px 14px;background:linear-gradient(120deg,#fff7f1 0%,#fff 60%);border-bottom:1px solid #f3e8e0;display:flex;gap:14px;align-items:center;flex-wrap:wrap}'
+  +'.drt .sh .ic{width:44px;height:44px;border-radius:12px;background:#f26522;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none;box-shadow:0 4px 10px rgba(242,101,34,.25)}'
+  +'.drt .sh h2{margin:0;font-size:19px;font-weight:600}.drt .sh .sub{color:#6b7280;font-size:12.5px;margin-top:2px}'
+  +'.drt .bd{background:#f5f7fb;padding:14px 22px 20px}'
+  +'.drt .stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}.drt .stt{display:flex;align-items:center;gap:10px;border:1px solid #e5e7eb;border-radius:12px;padding:8px 14px;min-width:150px;background:#fff}'
+  +'.drt .stt b{font-size:22px;line-height:1}.drt .stt small{color:#6b7280;font-size:12px;line-height:1.2}.drt .stt i{width:10px;height:10px;border-radius:50%;display:inline-block}'
+  +'.drt .info{font-size:12px;color:#6b7280;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;line-height:1.55;display:inline-block;margin-bottom:12px}'
+  +'.drt .lh,.drt .rw{display:grid;grid-template-columns:250px 1fr 104px 240px;gap:18px;align-items:center}'
+  +'.drt .lh{padding:0 16px 8px 21px;font-size:13px;font-weight:600;color:#475569}.drt .lh span:nth-child(2),.drt .lh span:nth-child(3){text-align:center}'
+  +'.drt .rw{background:#fff;border:1.5px solid #e2e8f0;border-left:5px solid #22c55e;border-radius:14px;padding:16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(15,23,42,.05);transition:.15s}'
+  +'.drt .rw:hover{border-color:#fdba74;box-shadow:0 4px 14px rgba(242,101,34,.08)}.drt .rw.s1{border-left-color:#d97706}.drt .rw.s2{border-left-color:#dc2626}.drt .rw.u{border-left-color:#cbd5e1}.drt .rw.act{outline:2px solid #38bdf8;outline-offset:-1px}'
+  +'.drt .cu{display:flex;gap:10px;align-items:center;min-width:0}.drt .av{width:42px;height:42px;border-radius:50%;background:#fff1e8;color:#c2410c;font-weight:600;font-size:17px;display:flex;align-items:center;justify-content:center;flex:none}'
+  +'.drt .nm{font-weight:600;font-size:15.5px;word-break:break-word}.drt .when{font-size:12.5px;color:#6b7280}'
+  +'.drt .dc{display:flex;justify-content:center}.drt .dd{width:92px;padding:8px 0;border-radius:14px;border:2px solid;font-weight:600;display:flex;flex-direction:column;align-items:center;line-height:1.1}'
+  +'.drt .dd b{font-size:24px}.drt .dd small{font-size:12px;font-weight:500}.drt .d0{background:#f0fdf4;border-color:#22c55e;color:#15803d}.drt .d1{background:#fff7ed;border-color:#f59e0b;color:#b45309}.drt .d2{background:#fef2f2;border-color:#ef4444;color:#b91c1c}'
+  +'.drt .ac{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}'
+  +'.drt .tl{max-width:620px;margin:0 auto;width:100%}.drt .tt{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}.drt .tt .lb{font-size:13px;font-weight:600;color:#334155}'
+  +'.drt .tt .pc{font-weight:600;color:#16a34a;font-size:14px}.drt .tt .pc small{color:#6b7280;font-weight:400;font-size:12.5px}'
+  +'.drt .sg{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}.drt .g{height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:500;position:relative;white-space:nowrap;cursor:default}'
+  +'.drt .g.ok{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:inset 0 -2px 0 rgba(0,0,0,.08)}.drt .g.no{background:#fff5f5;border:2px dashed #dc2626;color:#dc2626;font-weight:600}.drt .g.na{background:#f3f4f6;color:#9ca3af}'
+  +'.drt .g b{position:absolute;top:-8px;right:-5px;background:#dc2626;color:#fff;font-size:10px;border-radius:999px;padding:0 5px;line-height:15px}'
+  +'.drt .lg{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;margin-top:9px}.drt .lg:empty{display:none}'
+  +'.drt .lg span{display:flex;align-items:center;gap:7px;border-radius:8px;padding:5px 10px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12.5px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}'
+  +'.drt .lg span:before{content:"!";flex:none;width:17px;height:17px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}'
+  +'.drt .lg span.ok{background:#f0fdf4;border-color:#86efac;color:#15803d;grid-column:1/-1}.drt .lg span.ok:before{content:"✓";background:#16a34a}'
+  +'.drt .unk{font-size:12.5px;color:#6b7280;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}.drt .unk i{font-style:normal;background:#f3f4f6;border-radius:999px;padding:2px 10px;color:#4b5563}'
+  +'@media (max-width:1150px){.drt .lh{display:none}.drt .rw{grid-template-columns:1fr auto;gap:12px}.drt .rw .tlc{grid-column:1/-1;order:3}.drt .rw .ac{grid-column:1/-1;order:4;justify-content:flex-start}}'
+  +'@media (max-width:560px){.drt .lg{grid-template-columns:1fr}.drt .g{font-size:11px}}'
+  +'</style>';
+ const DRT_SH=['ลูกค้า','อาชีพ','รายได้','การขาย','ผู้ค้ำ'];
+ const DRT_NM=t=>String(t||'').replace('ผู้ค้ำประกันและประวัติ','ผู้ค้ำประกัน').replace('ประเภทการขายและเงื่อนไข','การขาย/เงื่อนไข');
+ function listHTML(){ const L=load().slice().sort((a,b)=>(a.created||0)-(b.created||0));
+  const n2=L.filter(e=>ageD(e)>STALE_D).length, n1=L.filter(e=>{const a=ageD(e);return a>0&&a<=STALE_D;}).length, n0=L.length-n2-n1;
+  let h=DRT_CSS+'<div class="card drt"><div class="sh"><div class="ic">📝</div><div><h2>ร่างคำขอ (รอถ่ายภาพ)</h2><div class="sub">'+L.length+' ร่างในเครื่องนี้ · เรียงจากค้างนานสุด</div></div>'
+   +'<span style="margin-left:auto"></span><button class="btn btn-line btn-sm" onclick="drSync()">🔄 ตรวจภาพล่าสุด</button> <button class="btn btn-org btn-sm" onclick="drNew()">➕ เริ่มใบคำขอใหม่</button></div><div class="bd">';
+  if(L.length) h+='<div class="stats"><div class="stt"><i style="background:#dc2626"></i><b style="color:#dc2626">'+n2+'</b><small>ค้างเกิน '+STALE_D+' วัน<br>สนญ. เห็นเป็นสีเหลือง</small></div><div class="stt"><i style="background:#d97706"></i><b style="color:#d97706">'+n1+'</b><small>ค้าง 1–'+STALE_D+' วัน</small></div><div class="stt"><i style="background:#16a34a"></i><b style="color:#16a34a">'+n0+'</b><small>สร้างวันนี้</small></div></div>';
+  h+='<div class="info">ℹ️ กรอกใบคำขอรอไว้ได้หลายเคส · ถ่ายภาพบังคับครบแล้วเปิดเคสนั้นกด "ส่งคำขอไปยัง สนญ." · สนญ. เห็นเฉพาะจำนวนร่างและสถานะภาพ · ร่างเก็บในเครื่อง/เบราว์เซอร์นี้เท่านั้น</div>';
+  if(!L.length) return h+'<div class="mut" style="padding:18px 0;text-align:center">ยังไม่มีร่าง — กรอกใบคำขอ แล้วกด "📝 บันทึกร่าง" ที่แถบบนของฟอร์ม</div></div></div>';
+  h+='<div class="lh"><span>ลูกค้า</span><span>ไทม์ไลน์งาน</span><span>ค้างมาแล้ว</span><span></span></div>';
+  L.forEach(e=>{ const ag=ageD(e), act=window.__drActive===e.id, nm=String(e.name||'').trim();
+   const sc=(ag>STALE_D?'s2':ag>0?'s1':'')+(e.miss?'':' u')+(act?' act':'');
+   h+='<div class="rw '+sc+'"><div class="cu"><div class="av">'+E(nm?nm.replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/,'').charAt(0)||nm.charAt(0):'?')+'</div><div style="min-width:0"><div class="nm">'+E(nm||'(ไม่มีชื่อ)')+(act?' <span class="tag" style="background:#e0f2fe;color:#075985;font-size:11px">กำลังเปิดอยู่</span>':'')+'</div><div class="when">สร้าง '+E(p2phT(e.created))+'</div></div></div>'
+    +'<div class="tlc">'+todoCell(e)+'</div>'
+    +'<div class="dc"><span class="dd '+(ag>STALE_D?'d2':ag>0?'d1':'d0')+'">'+(ag>0?'<b>'+ag+'</b><small>วัน</small>':'<b style="font-size:15px">วันนี้</b><small>ใหม่</small>')+'</span></div>'
+    +'<div class="ac"><button class="btn btn-sm btn-org" onclick="drOpen(\''+e.id+'\')">เปิดต่อ</button> <button class="btn btn-sm btn-line" onclick="drCopy(\''+e.id+'\',this)">💬 LINE</button> <button class="btn btn-sm btn-line" style="color:#b91c1c" title="ลบร่าง" onclick="drDel(\''+e.id+'\')">🗑</button></div></div>'; });
+  return h+'</div></div>'; }
+ /* ไทม์ไลน์ 6 ช่อง: ข้อ 1–5 ของฟอร์ม + ภาพบังคับ · เขียว=ครบ · เส้นประแดง=ค้าง (ตัวเลข=จำนวนช่อง/ภาพที่ค้าง) */
+ function todoCell(e){ if(!e.miss) return '<div class="unk"><i>ยังไม่ได้ตรวจ</i>กด "เปิดต่อ" แล้วกลับมาหน้านี้ จะขึ้นไทม์ไลน์งาน</div>';
+  const n=need(e).length, d=doneN(e), qr=!!(e.S&&e.S.tok), M={}; e.miss.forEach(x=>{ M[x.n]=x; });
+  const phOk=qr&&n>0&&d>=n, phLeft=qr&&n?n-d:0;
+  let seg='', lg='', dn=0;
+  for(let k=1;k<=5;k++){ const x=M[k]; if(!x){ dn++; seg+='<div class="g ok" title="ข้อ '+k+' เสร็จแล้ว">✓ '+DRT_SH[k-1]+'</div>'; continue; }
+   const t='ข้อ '+k+' '+DRT_NM(x.t)+' · ค้าง '+x.m.length;
+   seg+='<div class="g no" title="'+E(t+'\n'+x.m.join('\n'))+'">'+DRT_SH[k-1]+'<b>'+x.m.length+'</b></div>';
+   lg+='<span title="'+E(x.m.join('\n'))+'">'+E(t)+'</span>'; }
+  if(phOk){ dn++; seg+='<div class="g ok" title="ภาพบังคับครบแล้ว">✓ ภาพ</div>'; }
+  else { const t='ภาพบังคับ · '+(!qr?'ยังไม่สร้าง QR':n?'ค้าง '+phLeft+' ภาพ':'ยังไม่มีรายการภาพ');
+   seg+='<div class="g no" title="'+E(t)+'">ภาพ'+(phLeft?'<b>'+phLeft+'</b>':'')+'</div>'; lg+='<span>'+E(t)+'</span>'; }
+  if(dn>=6) lg='<span class="ok">กรอกครบและภาพครบ · กด "เปิดต่อ" เพื่อส่ง สนญ.</span>';
+  return '<div class="tl"><div class="tt"><span class="lb">ความคืบหน้า</span><span class="pc">'+Math.round(dn*100/6)+'% <small>· เสร็จ '+dn+'/6</small></span></div><div class="sg">'+seg+'</div><div class="lg">'+lg+'</div></div>'; }
  function missCell(e){ if(!e.miss) return '<span class="mut" style="font-size:12px">กด "เปิดต่อ" แล้วกลับมาหน้านี้ จะขึ้นรายการที่ค้าง</span>'; if(!e.miss.length) return '<span class="tag" style="background:#f0fdf4;border:1px solid #86efac;color:#15803d">✅ กรอกครบ</span>';
   return e.miss.map(x=>'<div title="'+E(x.m.join('\n'))+'" style="margin:3px 0;font-size:12.5px"><span class="tag" style="background:#fff7ed;border:1px solid #fdba74;color:#c2410c">ข้อ '+x.n+' '+E(x.t)+' · ค้าง '+x.m.length+'</span><div class="mut" style="font-size:11.5px;line-height:1.4;margin-top:1px">'+E(x.m.slice(0,3).map(t=>String(t).replace(/\s*\(.*$/,'').slice(0,46)).join(' · '))+(x.m.length>3?' · +'+(x.m.length-3)+' อื่น ๆ':'')+'</div></div>').join(''); }
  function render(){ if(currentTab!=='pdr') return; const v=$('view'); if(v) v.innerHTML=listHTML(); }
