@@ -21765,6 +21765,98 @@ try{ if(typeof P2PH_PINLAB==='object'){ P2PH_PINLAB.work='💼 ที่ทำ�
  setInterval(()=>{ if($('f-income')) ensure(); },500);
 })();
 
+/* ===== P2 · ติ๊ก "ลูกค้าไม่มีเอกสาร" → ปิด ① ② (มติผู้ใช้ 26 พ.ย. 69 — เลือก "ใช้ ถามก่อนลบ") =====
+   - ติ๊กแล้ว: กล่อง ① ② (และ "ถ้ามีให้แนบ") เป็นสีเทา กดไม่ได้ · ล้างตัวเลือก · คำถามบิล 3.1 = "ไม่มีบิล"
+   - ถ้ามีไฟล์แนบอยู่แล้ว → ถามยืนยันก่อน (ยกเลิก = ไม่ติ๊ก ไฟล์อยู่ครบ) · ยืนยัน = ถอดไฟล์ออกจากเคส (ไฟล์ใน Drive ไม่ถูกลบ ลบตามรอบ 6 เดือนเดิม)
+   - เอาติ๊กออก: ① ② กลับมากดได้ (ตัวเลือกที่ล้างไปแล้วไม่คืน)
+   - ผู้ซื้อเท่านั้น (ผู้ค้ำ/อาชีพเสริมไม่แตะ) */
+(function(){
+ const $=id=>document.getElementById(id);
+ function buyerFiles(){ const st=window.__p2doc||{}; const out=[];
+  if(st.inc&&st.incFile) out.push(st.incFile);
+  Object.keys(st.needFile||{}).forEach(k=>{ if(st.needFile[k]) out.push(st.needFile[k]); });
+  Object.keys(st.optFile||{}).forEach(k=>{ if(st.optFile[k]) out.push(st.optFile[k]); });
+  try{ const n=typeof window.__bqRbN==='function'?window.__bqRbN():(typeof rbPhotoCount==='function'?rbPhotoCount():0); for(let i=0;i<n;i++) out.push('ภาพบิล '+(i+1)); }catch(e){}
+  return out; }
+ function clearBuyer(){ const st=window.__p2doc; if(!st) return;
+  st.inc=''; st.incFile=''; st.need={}; st.needFile={}; st.opt={}; st.optFile={}; window.__altAuto=false;
+  try{ const c=window.__p2fs&&window.__p2fs.c; if(c) Object.keys(c).forEach(k=>{ if(k==='inc'||/^need\d+$/.test(k)||/^o\d+$/.test(k)) delete c[k]; }); }catch(e){}
+  if(st.billq!==undefined||document.getElementById('bq-w')) st.billq='no'; }
+ if(typeof window.p2npSet==='function'){ const _s=window.p2npSet; window.p2npSet=function(v){
+  if(v){ const F=buyerFiles(); const st=window.__p2doc||{};
+   const picked=!!(st.inc||Object.keys(st.need||{}).some(k=>st.need[k])||Object.keys(st.opt||{}).some(k=>st.opt[k]));
+   if(F.length&&!confirm('ติ๊ก "ลูกค้าไม่มีเอกสาร" แล้ว ระบบจะปิด ① ② และเอาเอกสารที่แนบไว้ '+F.length+' ไฟล์ออกจากเคสนี้\n• '+F.slice(0,6).join('\n• ')+(F.length>6?'\n…':'')+'\n\nยืนยันไหม? (กด "ยกเลิก" = ไม่ติ๊ก เอกสารยังอยู่ครบ)')){ try{ p2DocRender(); }catch(e){} return; }
+   if(F.length||picked) clearBuyer(); else { const st2=window.__p2doc; if(st2&&document.getElementById('bq-w')) st2.billq='no'; } }
+  const r=_s.apply(this,arguments); try{ if(window.p2BillQEnsure) window.p2BillQEnsure(); lock(); }catch(e){} return r; }; }
+ try{ const css=document.createElement('style'); css.textContent='#p2doc-w .p2d-sec.np-off{opacity:.45;filter:grayscale(1);pointer-events:none;background:#f3f4f6!important;border-radius:10px}'
+  +'.np-lock{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:7px 10px;border-radius:8px;background:#fff7ed;border:1px dashed #fb923c;color:#9a3412;font-size:13px}'
+  +'#bq-w.np-off{opacity:.5;pointer-events:none}'; document.head.appendChild(css); }catch(e){}
+ function lock(){ try{ const box=document.querySelector('#p2doc-w .p2doc'); if(!box) return; const on=!!window.__p2np;
+  const secs=[].slice.call(box.querySelectorAll('.p2d-sec'));
+  secs.forEach(s=>{ s.classList.toggle('np-off',on); [].forEach.call(s.querySelectorAll('input,button,select,textarea'),x=>{ x.disabled=on; }); });
+  let b=box.querySelector('.np-lock'); if(on&&secs.length){ if(!b) secs[0].insertAdjacentHTML('beforebegin','<div class="np-lock">🔒 ปิด ① ② ไว้ เพราะติ๊ก "ลูกค้าไม่มีเอกสาร" ด้านล่าง — ถ้าลูกค้ามีเอกสาร ให้เอาติ๊กด้านล่างออกก่อน</div>'); } else if(b) b.remove();
+  const q=$('bq-w'); if(q){ q.classList.toggle('np-off',on); [].forEach.call(q.querySelectorAll('input'),x=>{ x.disabled=on; }); }
+ }catch(e){ console.warn('nplock',e); } }
+ { const _d=p2DocRender; p2DocRender=function(){ const r=_d.apply(this,arguments); lock(); return r; }; }
+ setInterval(()=>{ if($('p2doc-w')) lock(); },700);
+ window.p2NpLock=lock;
+})();
+
+/* ===== P2 · ตัวเลือก "❌ ไม่มี" ใน ① และ ② (มติผู้ใช้ 26 พ.ย. 69 "โอเคเลย") =====
+   - ① ต่อท้าย "❌ ไม่มีเอกสาร ① เลย" ทุกอาชีพย่อย · ② ต่อท้าย "❌ ไม่มีเอกสาร ② เลย" เฉพาะอาชีพย่อยที่มี ② (เอกสารยืนยันอาชีพ)
+   - ① ไม่มี + (② ไม่มี หรืออาชีพย่อยไม่มี ②) → ติ๊ก "ลูกค้าไม่มีเอกสาร" ให้อัตโนมัติ → ล็อก ① ② (bl_p2_nplock) → ต้องถ่ายภาพ
+   - "ถ้ามีให้แนบ" ไม่บังคับ → ไม่มีตัวเลือกไม่มี
+   - ตอบ "ไม่มีบิล" (3.1) แล้ว ① ไม่เหลืออย่างอื่น → ตั้ง ① ไม่มี ให้เอง
+   - เอาติ๊ก "ลูกค้าไม่มีเอกสาร" ออก → ล้าง ① ไม่มี / ② ไม่มี ให้เลือกใหม่
+   เก็บใน __p2doc.incNone / __p2doc.needNone (ไปกับ a.p2doc และร่าง) */
+(function(){
+ const $=id=>document.getElementById(id);
+ function spec(st){ try{ return p2DocSpec(st.g,st.sub); }catch(e){ return {inc:[],need:[],opt:[]}; } }
+ function hasNeed(st){ return (spec(st).need||[]).length>0; }
+ function needFiles(st){ return Object.keys(st.needFile||{}).filter(k=>st.needFile[k]&&(st.need||{})[k]); }
+ function check(){ const st=window.__p2doc; if(!st||window.__p2np) return;
+  if(st.incNone&&(!hasNeed(st)||st.needNone)){ window.__noneAuto=true; try{ p2npSet(true); }finally{ window.__noneAuto=false; } } }
+ window.p2NoneSet=function(k,v){ const st=window.__p2doc; if(!st) return;
+  if(k==='inc'){ st.incNone=!!v; if(v){ st.inc=''; st.incFile=''; try{ const c=window.__p2fs&&window.__p2fs.c; if(c) delete c.inc; }catch(e){} } }
+  else if(k==='need'){ if(v){ const F=needFiles(st); if(F.length&&!confirm('ติ๊ก "ไม่มีเอกสาร ② เลย" แล้ว จะเอาเอกสาร ② ที่แนบไว้ '+F.length+' ไฟล์ออกจากเคสนี้\nยืนยันไหม? (กด "ยกเลิก" = ไม่ติ๊ก เอกสารยังอยู่ครบ)')){ p2DocRender(); return; }
+    st.need={}; st.needFile={}; try{ const c=window.__p2fs&&window.__p2fs.c; if(c) Object.keys(c).forEach(x=>{ if(/^need\d+$/.test(x)) delete c[x]; }); }catch(e){} }
+   st.needNone=!!v; }
+  p2DocRender(); check(); };
+ /* เลือกเอกสารจริง → ถอนตัวเลือกไม่มีของข้อนั้น */
+ { const _s=p2DocSet; p2DocSet=function(k,i,v){ const st=window.__p2doc; if(st){ if(k==='inc'&&i) st.incNone=false; if(k==='need'&&v) st.needNone=false; } return _s.apply(this,arguments); }; }
+ /* เอาติ๊กไม่มีเอกสารออก → เลือก ① ② ใหม่ */
+ { const _n=window.p2npSet; window.p2npSet=function(v){ if(!v&&!window.__noneAuto){ const st=window.__p2doc; if(st){ st.incNone=false; st.needNone=false; } } return _n.apply(this,arguments); }; }
+ /* ตอบ "ไม่มีบิล" แล้ว ① ไม่เหลืออย่างอื่น → ① ไม่มี ให้เอง */
+ if(typeof window.p2BillQ==='function'){ const _b=window.p2BillQ; window.p2BillQ=function(v){ const r=_b.apply(this,arguments); try{ const st=window.__p2doc;
+   if(st){ if(v==='no'&&!(spec(st).inc||[]).some(x=>x[0]!=='bill')){ st.incNone=true; p2DocRender(); check(); } else if(v==='yes'&&st.incNone){ st.incNone=false; p2DocRender(); } } }catch(e){} return r; }; }
+ const NONE_ST='border:1.5px dashed #9ca3af;border-radius:10px;background:#f9fafb';
+ const ON_ST='border:1.5px dashed #dc2626;border-radius:10px;background:#fef2f2';
+ function inject(){ try{ const st=window.__p2doc; const box=document.querySelector('#p2doc-w .p2doc'); if(!st||!box) return;
+  const secs=[].slice.call(box.querySelectorAll('.p2d-sec')); const s1=secs[0]; if(!s1||s1.querySelector('.nn-inc')) return;
+  const nd=hasNeed(st); const yes=st.billq==='yes';
+  const lab=document.createElement('label'); lab.className='p2d-opt nn-inc'+(st.incNone?' on':''); lab.style.cssText=(st.incNone?ON_ST:NONE_ST)+(yes?';display:none':'');
+  lab.innerHTML='<input type="radio" name="p2d-inc" value="__none" '+(st.incNone?'checked':'')+' onchange="p2NoneSet(\'inc\',true)"><span><b>❌ ไม่มีเอกสาร ① เลย</b><br><span class="mut">ไม่มีข้อไหนข้างบน'+(nd?' → ไปดู ② ต่อ':' → ระบบติ๊ก "ลูกค้าไม่มีเอกสาร" ให้ แล้วต้องลงถ่ายภาพ')+'</span></span>';
+  const opts=s1.querySelectorAll('label.p2d-opt:not(.nn-inc)'); const last=opts[opts.length-1];
+  if(last) last.insertAdjacentElement('afterend',lab); else { const t=s1.querySelector('.p2d-t'); if(t) t.insertAdjacentElement('afterend',lab); else s1.appendChild(lab); }
+  if(st.incNone){ [].forEach.call(s1.querySelectorAll('.alt-miss,.bq-note'),x=>x.remove()); s1.style.cssText=''; }
+  if(nd){ const s2=secs.find(s=>/เอกสารยืนยันอาชีพ/.test(((s.querySelector('.p2d-t')||{}).textContent)||''));
+   if(s2&&!s2.querySelector('.nn-need')){ const row=document.createElement('div'); row.className='p2d-row nn-need'; row.style.cssText=(st.needNone?ON_ST:NONE_ST)+';padding:6px 8px;margin-top:4px';
+    row.innerHTML='<label><input type="checkbox" '+(st.needNone?'checked':'')+' onchange="p2NoneSet(\'need\',this.checked)"> <b>❌ ไม่มีเอกสาร ② เลย</b></label><span class="mut" style="font-size:12.5px">ไม่มีทั้ง ① และ ② → ระบบติ๊ก "ลูกค้าไม่มีเอกสาร" ให้</span>';
+    s2.appendChild(row); } }
+  /* ติ๊กให้อัตโนมัติแล้ว → แถบเขียวบอกเหตุผล */
+  const np=$('p2np'); let g=box.querySelector('.nn-auto'); if(g) g.remove();
+  if(window.__p2np&&st.incNone&&(!nd||st.needNone)&&np) np.insertAdjacentHTML('beforebegin','<div class="nn-auto" style="margin:8px 0;padding:8px 12px;border-radius:8px;background:#ecfdf5;border:1px solid #86efac;color:#166534;font-size:13px">✅ ไม่มี ①'+(nd?' และ ②':'')+' → ระบบติ๊ก "ลูกค้าไม่มีเอกสาร" ให้อัตโนมัติ · ต้องลงถ่ายภาพยืนยันอาชีพ + GPS</div>');
+  if(window.p2NpLock) window.p2NpLock();
+ }catch(e){ console.warn('none',e); } }
+ { const _d=p2DocRender; p2DocRender=function(){ const r=_d.apply(this,arguments); inject(); return r; }; }
+ /* ข้อความค้าง */
+ if(typeof p2DocMissing==='function'){ const _m=p2DocMissing; p2DocMissing=function(){ let r=_m.apply(this,arguments)||[];
+  try{ const st=window.__p2doc; if(st&&p2DocOn()&&st.incNone&&!window.__p2np){ const isInc=x=>/^ผู้ซื้อ: (เลือก|แนบ)เอกสารยืนยันรายได้|^ผู้ซื้อ: ไม่มีบิล/.test(x);
+   if(r.some(isInc)){ r=r.filter(x=>!isInc(x)); r.push(hasNeed(st)?'ผู้ซื้อ: ① ไม่มี — แนบ ② เอกสารยืนยันอาชีพ 1 อย่าง หรือติ๊ก "❌ ไม่มีเอกสาร ② เลย"':'ผู้ซื้อ: ① ไม่มี — ติ๊ก "ลูกค้าไม่มีเอกสาร" แล้วถ่ายภาพอาชีพ'); } } }catch(e){} return r; }; }
+ /* สนญ. */
+ if(typeof p2DocHqLine==='function'){ const _l=p2DocHqLine; p2DocHqLine=function(a){ let h=_l.apply(this,arguments); try{ const d=a&&a.p2doc; if(d&&(d.incNone||d.needNone)) h+='<div class="mut" style="font-size:12px;margin-top:2px">❌ สาขาเลือก: '+[d.incNone?'ไม่มีเอกสาร ①':'',d.needNone?'ไม่มีเอกสาร ②':''].filter(Boolean).join(' · ')+'</div>'; }catch(e){} return h; }; }
+})();
+
 </script>
 </body>
 </html>
