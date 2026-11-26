@@ -20726,7 +20726,14 @@ function decorateGuar(){ const w=document.getElementById('p2gdoc-w'); const st=w
  /* ป้ายมุมขวา */
  const n=missGuar().length; const tag=box.querySelector('.p2d-h .tag'); if(tag){ tag.textContent=n?'ยังไม่ครบ '+n+' รายการ':'✅ ครบ'; tag.style.background=n?'#fff7ed':'#dcfce7'; tag.style.color=n?'#c2410c':'#15803d'; }
  if(!box.querySelector('.p2up-note')) box.insertAdjacentHTML('beforeend','<div class="mut p2up-note" style="font-size:12px;margin-top:6px">ภาพเก็บใน Google Drive ของบริษัท โฟลเดอร์ <b>3_ผู้ค้ำ</b> ของเคส · บัตร+ทะเบียนบ้านลบเมื่อปิดรอบเดือน · เอกสารอื่นเก็บ 6 เดือน</div>'); }
-function decorateDoc(){ const w=document.getElementById('p2doc-w'); if(!w) return; decorate(w); const box=w.querySelector('.p2doc'); if(!box||box.querySelector('.p2up-note')) return;
+function decorateOptDoc(w){ const st=window.__p2doc; if(!st) return;
+ [].forEach.call(w.querySelectorAll('.p2d-sec'),sec=>{ if(!/ถ้ามีให้แนบ/.test((sec.querySelector('.p2d-t')||{}).textContent||'')) return;
+  [].forEach.call(sec.querySelectorAll('.p2d-row'),(row,i)=>{ const cb=row.querySelector('input[type=checkbox]'); if(!cb) return;
+   if(!cb.checked){ if(st.optFile&&st.optFile[i]){ delete st.optFile[i]; if(window.__p2fs&&window.__p2fs.c) delete window.__p2fs.c['o'+i]; } return; }
+   if(row.querySelector('.p2up')) return;
+   if(!st.optFile||!st.optFile[i]){ const f=(window.__p2fs.c||{})['o'+i]; if(f) delete window.__p2fs.c['o'+i]; }
+   row.insertAdjacentHTML('beforeend',widget('c','o'+i)); }); }); }
+function decorateDoc(){ const w=document.getElementById('p2doc-w'); if(!w) return; decorate(w); try{ decorateOptDoc(w); }catch(e){} const box=w.querySelector('.p2doc'); if(!box||box.querySelector('.p2up-note')) return;
  const n=missDoc().length; const tag=box.querySelector('.p2d-h .tag'); if(tag&&window.__p2doc){ tag.textContent=n?'ยังไม่ครบ '+n+' รายการ':'✅ ครบ ส่งเคสได้'; tag.style.background=n?'#fff7ed':'#dcfce7'; tag.style.color=n?'#c2410c':'#15803d'; }
  box.insertAdjacentHTML('beforeend','<div class="mut p2up-note" style="font-size:12px;margin-top:4px">ไฟล์เก็บใน Google Drive ของบริษัท โฟลเดอร์ <b>2_เอกสารลูกค้า</b> ของเคส · เก็บ 6 เดือน · บัตร+ทะเบียนบ้านผู้ซื้อแนบที่หัวข้อ 1 เหมือนเดิม</div>'); }
 try{ const st=document.createElement('style'); st.textContent='.p2up{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;margin:4px 0 2px;padding:6px 10px;border-radius:10px}.p2up-none{border:1.5px dashed #f59e0b;background:#fffbeb}.p2up-busy{border:1.5px dashed #cbd5e1;background:#f8fafc}.p2up-ok{border:1.5px solid #86efac;background:#f0fdf4}.p2up-fail{border:1.5px solid #fcd34d;background:#fffbeb}.p2d-row .p2up{margin-left:24px;flex-basis:100%}'; document.head.appendChild(st); }catch(e){}
@@ -20760,6 +20767,8 @@ function caseNeed(a){ const L=[]; const F=a.p2files||{}; const ok=(sc,slot)=>!!(
   Object.keys(F.g||{}).filter(k=>/^o\d+$/.test(k)).forEach(k=>{ const S2=p2DocSpec(d.g,d.sub).need.concat(p2DocSpec(d.g,d.sub).opt); L.push({sc:'g',slot:k,lab:'📄 ผู้ค้ำ: '+(S2[+k.slice(1)]||'เอกสารอาชีพ'),req:0,ok:ok('g',k)}); }); }
  if(a.p2doc&&a.p2doc.inc){ const d=a.p2doc; const S=p2DocSpec(d.g,d.sub); const inc=S.inc.find(x=>x[0]===d.inc);
   L.push({sc:'c',slot:'inc',lab:'💵 รายได้ผู้ซื้อ: '+(inc?inc[1]:d.inc),req:1,ok:ok('c','inc')}); S.need.forEach((x,i)=>L.push({sc:'c',slot:'need'+i,lab:'📄 ผู้ซื้อ: '+x,req:1,ok:ok('c','need'+i)})); }
+ else if(a.p2doc){ const d=a.p2doc; const S=p2DocSpec(d.g,d.sub); S.need.forEach((x,i)=>{ if(d.need&&d.need[i]) L.push({sc:'c',slot:'need'+i,lab:'📄 ผู้ซื้อ: '+x+' (ใช้แทนเอกสารรายได้)',req:1,ok:ok('c','need'+i)}); }); }
+ if(a.p2doc){ const S=p2DocSpec(a.p2doc.g,a.p2doc.sub); Object.keys(F.c||{}).filter(k=>/^o\d+$/.test(k)).forEach(k=>L.push({sc:'c',slot:k,lab:'📄 ผู้ซื้อ: '+((S.opt||[])[+k.slice(1)]||'เอกสารเสริม'),req:0,ok:ok('c',k)})); }
  return L; }
 window.p2upCaseNeed=caseNeed;
 function caseMiss(a){ return caseNeed(a).filter(x=>x.req&&!x.ok); }
@@ -21581,6 +21590,77 @@ try{ if(typeof P2PH_PINLAB==='object'){ P2PH_PINLAB.work='💼 ที่ทำ�
   const note=document.createElement('span'); note.className='noprint'; note.id='pg-note'; note.style.cssText='font-size:12px;color:#fff;background:rgba(255,255,255,.16);border:1px dashed rgba(255,255,255,.5);border-radius:8px;padding:5px 10px;max-width:260px;line-height:1.4';
   note.textContent='🖨 พิมพ์ใบอนุมัติได้หลังบันทึกผลขาย + เลขที่สัญญา'; bs[0].insertAdjacentElement('beforebegin',note); bs.forEach(b=>b.remove()); }catch(e){ console.warn('printgate',e); } }
  if(typeof openDetail==='function'){ const _o=openDetail; openDetail=function(id){ const r=_o.apply(this,arguments); hide(id); return r; }; }
+})();
+
+/* ===== P2 · จัดแถวหัวข้อ 3.3 (ภาระผ่อนหนี้เดิม / ค่าใช้จ่าย) ให้ช่องกรอกอยู่ระดับเดียวกัน (ผู้ใช้ 26 พ.ย. 69) =====
+   สาเหตุ: ป้ายกำกับยาว 1–2 บรรทัดไม่เท่ากัน → ช่องกรอกตกลงมาต่างระดับ · เลือกผ่อนเดิม "ไม่มี" แล้วช่องเล็กกว่าข้างเคียง */
+(function(){
+ try{
+  const st=document.createElement('style');
+  st.textContent='.g33{align-items:stretch}.g33>.field{display:flex;flex-direction:column}'
+   +'.g33>.field>input,.g33>.field>div:last-child{margin-top:auto}'
+   +'.g33 select,.g33 input{height:40px;box-sizing:border-box}'
+   +'.g33>.field>div:last-child select{width:110px}';
+  document.head.appendChild(st);
+  const mark=()=>{ const i=document.getElementById('f-debthc'); const g=i&&i.closest('.fgrid3'); if(g) g.classList.add('g33'); };
+  mark(); document.addEventListener('DOMContentLoaded',mark); setInterval(mark,1000);
+ }catch(e){}
+})();
+
+/* ===== P2 · ช่อง "ผู้ค้ำประกัน / เอกสาร" เหลือ 2 ตัวเลือก: มีผู้ค้ำประกัน / ไม่มีผู้ค้ำประกัน (ผู้ใช้ 26 พ.ย. 69) =====
+   เหตุผล: เฟส 2 ตรวจเอกสารผู้ค้ำในกล่องเอกสารอยู่แล้ว (ไม่ครบ = ส่งเคสไม่ได้/ต้องถ่ายภาพแทน) → ไม่ต้องให้สาขาเลือก "เอกสารครบ/ไม่ครบ" ซ้ำ
+   ทำ: เฉพาะเมื่อเปิดเฟส 2 (p2DocOn) · ตัวเลือกเดิม g_doc แสดงว่า "มีผู้ค้ำประกัน" · ซ่อนตัวเลือก g (เอกสารไม่ครบ) ยกเว้นเคส/ร่างเดิมที่เลือก g ไว้ (ไม่ทำให้ค่าหาย)
+   ไม่แตะเฟส 1 · ไม่แตะค่าที่เก็บ (g_doc / g / none) · เคสเก่าแสดงชื่อเดิม */
+(function(){
+ function sync(){ try{
+  const s=document.getElementById('f-guar'); if(!s||typeof p2DocOn!=='function'||!p2DocOn()) return;
+  [].forEach.call(s.options,o=>{
+   if(o.value==='g_doc') o.textContent='มีผู้ค้ำประกัน';
+   if(o.value==='g'){ const keep=(s.value==='g'); o.hidden=!keep; o.disabled=!keep; if(keep) o.textContent='มีผู้ค้ำประกัน (เอกสารไม่ครบ — เคสเดิม)'; }
+  });
+ }catch(e){} }
+ sync(); setInterval(sync,500);
+ document.addEventListener('change',e=>{ if(e.target&&e.target.id==='f-guar') setTimeout(sync,0); },true);
+})();
+
+/* ===== P2 · เอกสารรายได้: บิล → ติ๊ก ① ให้เอง · ไม่มีบิล ใช้ ② แทนได้ · ไม่มีเลยค่อยถ่ายภาพ (มติ 26 พ.ย. 69 ผู้ใช้สั่ง) =====
+   ลำดับ (ทุกอาชีพ): ① เอกสารยืนยันรายได้ (บิลขายง่ายสุด) → ไม่มี ① ใช้ ② เอกสารยืนยันอาชีพ 1 อย่างแทน → ไม่มีอะไรเลย ติ๊ก "ไม่มีเอกสาร" (อยู่ท้ายกล่อง) แล้วถ่ายภาพ
+   - สวนยาง/ปาล์ม ฯลฯ: มีภาพบิล ≥1 ใบ → ติ๊ก ① "บิล" ให้เอง ไม่ขึ้นช่องแนบซ้ำ · ไม่มีภาพบิล → ถอนติ๊ก + ขึ้นกรอบแดง
+   - ② "ถ้ามีให้แนบ" ติ๊กแล้วมีปุ่มแนบ (ทำใน bl_p2_gdoc.js) · ปุ่ม 📘 แนวทางฯ ไม่ขึ้นหน้าสาขา
+   ไม่แตะค่าที่เก็บเดิม (a.p2doc.inc/need/opt) */
+(function(){
+ const $=id=>document.getElementById(id);
+ const isInc=x=>/^ผู้ซื้อ: (เลือก|แนบ)เอกสารยืนยันรายได้/.test(x);
+ const OWNMSG='ผู้ซื้อ: เลือกชนิดเอกสารเจ้าของสวน (ทบก. / บัตร กยท. / โฉนด)';
+ const anyNeed=st=>{ try{ return Object.keys(st.needFile||{}).some(k=>st.needFile[k]&&(st.need||{})[k]); }catch(e){ return false; } };
+ const tickedNeed=st=>{ try{ return Object.keys(st.need||{}).some(k=>st.need[k]); }catch(e){ return false; } };
+ if(typeof p2DocMissing==='function'){ const _m=p2DocMissing; p2DocMissing=function(){ let r=_m.apply(this,arguments)||[];
+  try{ const st=window.__p2doc; if(st&&p2DocOn()){ if(anyNeed(st)) r=r.filter(x=>!isInc(x)); if(!tickedNeed(st)) r=r.filter(x=>x!==OWNMSG); } }catch(e){} return r; }; }
+ function billInc(st){ try{ return (p2DocSpec(st.g,st.sub).inc||[]).some(x=>x[0]==='bill'); }catch(e){ return false; } }
+ function autoBill(){ try{ if(!p2DocOn()||!$('rb-calc')) return; const st=window.__p2doc; if(!st||!billInc(st)) return;
+  const n=typeof rbPhotoCount==='function'?rbPhotoCount():0;
+  if(n>0&&!st.inc){ st.inc='bill'; window.__altAuto=true; p2DocRender(); }
+  else if(n===0&&st.inc==='bill'&&window.__altAuto){ st.inc=''; st.incFile=''; window.__altAuto=false; p2DocRender(); } }catch(e){} }
+ function polish(){ const w=$('p2doc-w'); const box=w&&w.querySelector('.p2doc'); const st=window.__p2doc; if(!box||!st||box.dataset.alt===JSON.stringify([st.inc,!!window.__p2np,anyNeed(st)])) return;
+  const secs=[].slice.call(box.querySelectorAll('.p2d-sec')); const hasNeed=secs.some(s=>/เอกสารยืนยันอาชีพ/.test((s.querySelector('.p2d-t')||{}).textContent||''));
+  /* หัวข้อ ② + คำอธิบายบนสุด */
+  secs.forEach(s=>{ const t=s.querySelector('.p2d-t'); if(t&&/เอกสารยืนยันอาชีพ/.test(t.textContent)){ const sp=t.querySelector('span'); if(sp) sp.textContent='🟡 ใช้แทน ① ได้ ถ้าไม่มีเอกสารรายได้'; } });
+  [].forEach.call(box.querySelectorAll('div.mut'),d=>{ if(/^ลูกค้ามาครั้งเดียว/.test(d.textContent||'')) d.innerHTML='ลูกค้ามาครั้งเดียว — เตรียมตามรายการนี้ · ① เลือก 1 อย่าง (บิลขายง่ายสุด)'+(hasNeed?' · ไม่มี ① ใช้ ② เอกสารยืนยันอาชีพ 1 อย่างแทนได้':'')+' · ไม่มีอะไรเลย → ติ๊ก "ลูกค้าไม่มีเอกสาร" ท้ายกล่อง แล้วลงถ่ายภาพอาชีพแทน · สนญ. ขอเพิ่มได้ภายหลัง (แถบสีส้มในเคส)'; });
+  /* บิล: ไม่ขึ้นช่องแนบซ้ำ */
+  if(st.inc==='bill'&&$('rb-calc')&&secs[0]){ const sl=secs[0].querySelector('.p2up[data-slot="inc"]'); if(sl){ const par=sl.parentElement; (par&&par!==secs[0]?par:sl).remove(); }
+   const old=$('agri-rbnote'); if(old) old.remove(); const n=typeof rbPhotoCount==='function'?rbPhotoCount():0;
+   if(!secs[0].querySelector('.alt-bill')) secs[0].insertAdjacentHTML('beforeend',n?'<div class="alt-bill" style="margin:4px 0 0 24px;font-size:12.5px;color:#15803d">✅ ใช้ภาพบิล '+n+' ใบจากช่อง 🧾 บิลขายยาง (หัวข้อ 3.1) — ไม่ต้องแนบซ้ำตรงนี้</div>':'<div class="alt-bill" style="margin:4px 0 0 24px;font-size:12.5px;color:#b91c1c">⚠ ยังไม่มีภาพบิล — ถ่าย/แนบที่ช่อง 🧾 บิลขายยาง ด้านบน</div>'); }
+  /* ① ยังไม่ครบ + ไม่ได้ติ๊กไม่มีเอกสาร → กรอบแดง */
+  const miss=(typeof p2DocMissing==='function'?p2DocMissing():[]).some(isInc); const np=!!window.__p2np;
+  if(secs[0]){ if(miss&&!np){ secs[0].style.cssText='border:1.5px solid #fca5a5;border-radius:10px;padding:6px 8px;background:#fff7f7'; if(!secs[0].querySelector('.alt-miss')) secs[0].insertAdjacentHTML('beforeend','<div class="alt-miss" style="margin:4px 0 0 4px;font-size:12.5px;color:#b91c1c">ยังไม่มีเอกสารรายได้ — เลือกข้อใดข้อหนึ่ง'+(hasNeed?' หรือแนบ ② แทน':'')+' หรือติ๊ก "ลูกค้าไม่มีเอกสาร" ท้ายกล่อง</div>'); } else { secs[0].style.cssText=''; const m=secs[0].querySelector('.alt-miss'); if(m) m.remove(); } }
+  /* ช่องติ๊ก "ไม่มีเอกสาร" ย้ายไปท้ายกล่อง (หลัง ① ②) */
+  const npEl=$('p2np'); const last=secs[secs.length-1]; if(npEl&&last&&last.nextElementSibling!==npEl){ npEl.style.marginTop='8px'; last.insertAdjacentElement('afterend',npEl); }
+  box.dataset.alt=JSON.stringify([st.inc,!!window.__p2np,anyNeed(st)]); }
+ if(typeof p2DocSet==='function'){ const _s=p2DocSet; p2DocSet=function(k){ if(k==='inc') window.__altAuto=false; return _s.apply(this,arguments); }; }
+ { const _d=p2DocRender; p2DocRender=function(){ const r=_d.apply(this,arguments); try{ const b=document.querySelector('#p2doc-w .p2doc'); if(b) delete b.dataset.alt; polish(); }catch(e){ console.warn('altdoc',e); } return r; }; }
+ /* ปุ่ม 📘 แนวทางเก็บภาพ/เอกสาร — ไม่ขึ้นหน้าสาขา */
+ function noGuide(){ try{ if(SESSION&&SESSION.role==='branch') document.querySelectorAll('.phd-guide').forEach(x=>x.remove()); }catch(e){} }
+ setInterval(()=>{ noGuide(); autoBill(); },600);
 })();
 
 </script>
