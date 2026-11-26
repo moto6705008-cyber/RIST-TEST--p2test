@@ -21541,7 +21541,7 @@ try{ if(typeof P2PH_PINLAB==='object'){ P2PH_PINLAB.work='💼 ที่ทำ�
    h+='<tr style="'+(st?'background:#fefce8':'')+(window.__drActive===e.id?';outline:2px solid #38bdf8':'')+'"><td><b>'+E(e.name||'(ไม่มีชื่อ)')+'</b>'+(window.__drActive===e.id?' <span class="tag" style="background:#e0f2fe;color:#075985">กำลังเปิดอยู่</span>':'')+'</td><td>'+E(e.occ||'—')+'</td><td>'+E(p2phT(e.created))+'</td><td>'+(ag>0?ag+' วัน':'วันนี้')+(st?' ⚠':'')+'</td><td>'+missCell(e)+'</td><td>'+ph+'</td>'
     +'<td style="white-space:nowrap"><button class="btn btn-sm btn-org" onclick="drOpen(\''+e.id+'\')">เปิดต่อ</button> <button class="btn btn-sm btn-line" onclick="drCopy(\''+e.id+'\',this)">💬 ลิงก์ LINE</button> <button class="btn btn-sm btn-line" style="color:#b91c1c" onclick="drDel(\''+e.id+'\')">🗑</button></td></tr>'; });
   return h+'</tbody></table></div></div>'; }
- function missCell(e){ if(!e.miss) return '<span class="mut" style="font-size:12px">เปิดร่างเพื่อตรวจ</span>'; if(!e.miss.length) return '<span class="tag" style="background:#f0fdf4;border:1px solid #86efac;color:#15803d">✅ กรอกครบ</span>';
+ function missCell(e){ if(!e.miss) return '<span class="mut" style="font-size:12px">กด "เปิดต่อ" แล้วกลับมาหน้านี้ จะขึ้นรายการที่ค้าง</span>'; if(!e.miss.length) return '<span class="tag" style="background:#f0fdf4;border:1px solid #86efac;color:#15803d">✅ กรอกครบ</span>';
   return e.miss.map(x=>'<div title="'+E(x.m.join('\n'))+'" style="margin:3px 0;font-size:12.5px"><span class="tag" style="background:#fff7ed;border:1px solid #fdba74;color:#c2410c">ข้อ '+x.n+' '+E(x.t)+' · ค้าง '+x.m.length+'</span><div class="mut" style="font-size:11.5px;line-height:1.4;margin-top:1px">'+E(x.m.slice(0,3).map(t=>String(t).replace(/\s*\(.*$/,'').slice(0,46)).join(' · '))+(x.m.length>3?' · +'+(x.m.length-3)+' อื่น ๆ':'')+'</div></div>').join(''); }
  function render(){ if(currentTab!=='pdr') return; const v=$('view'); if(v) v.innerHTML=listHTML(); }
  /* ---- สนญ.: อ่านสรุปร่างจาก master ---- */
@@ -21571,7 +21571,8 @@ try{ if(typeof P2PH_PINLAB==='object'){ P2PH_PINLAB.work='💼 ที่ทำ�
   const bar=document.createElement('div'); bar.id='dr-bar'; bar.style.cssText='background:#f0f9ff;border:1px solid #bae6fd;color:#0c4a6e;border-radius:8px;padding:7px 12px;margin:8px 0;font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
   bar.innerHTML='<div>📝 '+(act?'กำลังแก้ร่าง: <b>'+E(act.name||'ไม่มีชื่อ')+'</b>':'ใบคำขอใหม่')+' · ร่างที่รอไว้ <b>'+L.length+'</b> เคส</div><span style="margin-left:auto"></span><button type="button" class="btn btn-sm btn-org" onclick="drSave()">📝 บันทึกร่าง แล้วเริ่มเคสใหม่</button> <button type="button" class="btn btn-sm btn-line" onclick="go(\'pdr\')">📂 รายการร่าง</button>';
   host.insertAdjacentElement(fh?'afterend':'afterbegin',bar); }
- if(typeof go==='function'){ const _g=go; go=function(tab){ const r=_g.apply(this,arguments);
+ function refreshMiss(){ try{ if(!window.__drActive||typeof currentTab==='undefined'||currentTab!=='form'||window.__editCase) return; const L=load(); const e=L.find(x=>x.id===window.__drActive); if(!e) return; const mm=calcMiss(); if(mm){ e.miss=mm; put(L); } }catch(err){} }
+ if(typeof go==='function'){ const _g=go; go=function(tab){ if(tab!=='form') refreshMiss(); const r=_g.apply(this,arguments);
    try{ if(tab==='pdr'){ const v=$('view'); if(v){ v.innerHTML=listHTML(); window.scrollTo(0,0); } setTimeout(()=>{ try{ window.drSync(); }catch(e){} },50); }
     else if(tab==='pdh'){ const v=$('view'); if(v){ v.innerHTML=hqHTML(); window.scrollTo(0,0); } }
     else if(tab==='form') setTimeout(formBar,0); }catch(e){ console.warn('drafts go',e); } return r; }; }
@@ -21581,7 +21582,7 @@ try{ if(typeof P2PH_PINLAB==='object'){ P2PH_PINLAB.work='💼 ที่ทำ�
  /* ---- เก็บร่างที่เปิดอยู่เป็นระยะ (ฟอร์ม+ภาพ fdSave เองอยู่แล้ว · ที่นี่เก็บเอกสารแนบ + สถานะ QR + แถวสรุป) ---- */
  setInterval(()=>{ try{ if(!window.__drActive||currentTab!=='form'||window.__editCase) return; const L=load(); const e=L.find(x=>x.id===window.__drActive); if(!e) return; const d=nowForm(); if(!d) return;
    let S=null; try{ S=window.preshotGet&&window.preshotGet(); }catch(err){}
-   const before=JSON.stringify([e.name,e.occ,doneN(e),e.S&&e.S.tok]); Object.assign(e,{updated:Date.now(),name:fullName(d),mask:maskName(d),occ:occName(d),step:d.step||e.step,S:S?JSON.parse(JSON.stringify(S)):e.S});
+   { const mm=calcMiss(); if(mm) e.miss=mm; } const before=JSON.stringify([e.name,e.occ,doneN(e),e.S&&e.S.tok]); Object.assign(e,{updated:Date.now(),name:fullName(d),mask:maskName(d),occ:occName(d),step:d.step||e.step,S:S?JSON.parse(JSON.stringify(S)):e.S});
    put(L); idbPut(SNK(e.id),snapG()); if(before!==JSON.stringify([e.name,e.occ,doneN(e),e.S&&e.S.tok])) push(e); }catch(e){} },15000);
 })();
 
